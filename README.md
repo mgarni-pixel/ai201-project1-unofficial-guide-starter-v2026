@@ -172,8 +172,8 @@ group.
 | 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
 | 2. Every answer names a source | 5 of 5 |  |  |  |  |
 | 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 4. Chunks preserve complete thoughts | 4 of 5 |  |  |  |  |
+| 5. Cited source matches the correct document | 4 of 5 |  |  |  |  |
 
 <!-- Underneath, paste the REAL output for each criterion from one of your
      runs — the actual text your system produced, not a description of it.
@@ -237,8 +237,8 @@ group.
 | 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
 | 2. Every answer names a source | 5 of 5 |  |  |  |  |
 | 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 4. Chunks preserve complete thoughts | 4 of 5 |  |  |  |  |
+| 5. Cited source matches the correct document | 4 of 5 |  |  |  |  |
 
 **Did it help?**
 
