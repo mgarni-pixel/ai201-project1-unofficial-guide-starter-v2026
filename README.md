@@ -1,19 +1,6 @@
 # The Unofficial Guide
 
-<!-- Replace this line with your name and which corpus you picked. -->
-
-> **This file is your submission.** Fill it in as you go — most sections get
-> written during the milestone that produces them, not at the end.
->
-> How the starter works, and every command you'll need, is in `RUNNING.md`.
-> Leave that file alone.
->
-> **Paste everything as text.** No screenshots, no video. A typed table gets
-> full credit; a picture of the same table gets none.
->
-> Delete these instruction blocks as you replace them. The `<!-- -->` comments
-> are notes to you and don't show up when the page renders — you can leave them
-> or remove them.
+Manuel Garnica | Corpus: `campus_life`
 
 ---
 
@@ -21,11 +8,12 @@
 
 ## What This Does
 
-<!-- Three or four sentences. Which corpus you picked, and the kinds of
-     questions your system answers. Write it for someone who has never seen
-     this repo.
-
-     Milestone 5. -->
+This system answers questions about student life using the `campus_life`
+corpus, a collection of 88 short forum-style posts covering housing, dining,
+courses, admin processes, and campus services. You ask a plain question like
+"Is the housing lottery random?" and get back an answer drawn from the
+documents, with the source file named. If the question isn't covered by the
+corpus, the system says so instead of making something up.
 
 ## Chunking Strategy
 
@@ -103,30 +91,41 @@ Best time to do laundry here is Tuesday or Wednesday morning. Sunday after 6pm y
 
 ## Sample Answer
 
-<!-- One complete question and answer, pasted as text, with the source line
-     visible. Milestone 4. -->
-
-**Question:**
+**Question:** What determines priority for juniors and seniors in the housing lottery?
 
 **Answer:**
 
 ```
+(best distance 0.220, cutoff 0.6)
+
+For juniors and seniors, priority in the housing lottery is determined by
+accumulated credit hours first, with a random tie-break used if needed
+(admin_housing_lottery.txt).
+
+Sources retrieved: admin_grade_appeals.txt, admin_housing_lottery.txt,
+advising_registration.txt, course_stat_150_exams.txt,
+dining_the_atrium_followup.txt
 ```
 
-**My relevance cutoff:**
+**My relevance cutoff:** 0.6
 
-<!-- The number you set in config.py, and how you got there.
-
-     You ran five questions your corpus covers and the five in OUT_OF_SCOPE
-     that it clearly doesn't, and wrote down the best distance for each. What
-     did those two groups look like? Where was the gap? Put the actual numbers
-     here — the table below wants all ten rows.
-
-     Milestone 4. -->
+In-scope questions landed between 0.15 and 0.34. Out-of-scope questions landed
+between 0.80 and 0.93. The gap between the two groups is wide (0.34 to 0.80),
+so 0.6 sits comfortably in the middle with no risk of cutting into either
+group.
 
 | Question | In corpus? | Best distance |
 |---|---|---|
-|  |  |  |
+| What determines priority in the housing lottery? | Yes | 0.220 |
+| When do unused dining dollars expire? | Yes | 0.284 |
+| How quickly do west lot parking permits sell out? | Yes | 0.199 |
+| What is the main advantage of declaring a major early? | Yes | 0.337 |
+| How long does a library hold take to arrive? | Yes | 0.147 |
+| What is the capital of Mongolia? | No | 0.825 |
+| How do I change the oil in a diesel engine? | No | 0.934 |
+| Who won the 1994 World Cup? | No | 0.886 |
+| What is the recommended dosage of ibuprofen? | No | 0.803 |
+| How do I write a for loop in Rust? | No | 0.877 |
 
 ## How I Used AI
 
@@ -139,9 +138,9 @@ Best time to do laundry here is Tuesday or Wednesday morning. Sunday after 6pm y
 
      Milestone 5. -->
 
-**1.**
+**1.** I used AI to help setup the repo for commits and help me follow instructions. I got full help from AI on following instructions while it helped me follow along the activities by helping me understand what instructions mean and what I should do to follow along and complete milestones. AI contributed towards brainstorming and helping fill out task work while I corrected it on the scope.
 
-**2.**
+**2.** Another moment was github commits. Claude handled it automatically alongside helping me understand what was needed for the milestone before moving on. I got commits that were successful based on milestone progress. I just made sure to change that it double checked with me to ensure I am understanding the progress alongside having me double check the work it does.
 
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
