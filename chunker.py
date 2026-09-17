@@ -82,22 +82,61 @@ def fallback_split(
 
 def split_documents(documents: list[Document]) -> list[Chunk]:
     """
-    Split documents into chunks. ⚠️ REPLACE THE BODY OF THIS IN MILESTONE 3.
+    Paragraph-aware chunker for short forum-style documents.
 
-    Right now it just calls the fallback. That is the plain, generic behaviour
-    the brief is talking about.
+    Strategy: split each document on blank lines (paragraph breaks), then
+    merge consecutive paragraphs that are too short to stand alone. The first
+    paragraph keeps the document title so every chunk has context about where
+    it came from.
 
-    When you write your own strategy, set `produced_by` to
-    "chunker.py::split_documents" so your README's Sample Chunks section names
-    the right function. `app.py chunks` prints that string for you.
-
-    Things worth thinking about before you write any code:
-      - Are your documents short posts or long guides?
-      - Is the useful information in one sentence, or spread over a paragraph?
-      - Would splitting on paragraph breaks keep more thoughts intact than
-        splitting on a character count?
+    - MIN_PARAGRAPH_LEN: paragraphs shorter than this get merged with the
+      next one so we don't produce bare headings or sentence fragments.
+    - If a merged group exceeds config.CHUNK_SIZE, it stays as-is rather
+      than cutting mid-sentence (these docs are short enough that this
+      rarely happens).
     """
-    return fallback_split(documents)
+    MIN_PARAGRAPH_LEN = 150
+
+    chunks: list[Chunk] = []
+    for doc in documents:
+        # Split on blank lines (one or more empty lines).
+        paragraphs = [p.strip() for p in doc.text.split("\n\n") if p.strip()]
+
+        if not paragraphs:
+            continue
+
+        # Merge short paragraphs with the one after them.
+        merged: list[str] = []
+        buffer = ""
+        for para in paragraphs:
+            if buffer:
+                buffer = buffer + "\n\n" + para
+            else:
+                buffer = para
+
+            if len(buffer) >= MIN_PARAGRAPH_LEN:
+                merged.append(buffer)
+                buffer = ""
+
+        # Flush leftover: attach to the last group if one exists,
+        # otherwise keep it as its own chunk.
+        if buffer:
+            if merged:
+                merged[-1] = merged[-1] + "\n\n" + buffer
+            else:
+                merged.append(buffer)
+
+        for index, text in enumerate(merged):
+            chunks.append(
+                Chunk(
+                    text=text,
+                    source=doc.source,
+                    index=index,
+                    produced_by="chunker.py::split_documents",
+                )
+            )
+
+    return chunks
 
 
 def describe(chunks: list[Chunk]) -> str:
