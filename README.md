@@ -166,18 +166,81 @@ group.
      the same number goes in all three run columns. That's correct, not lazy.
 
      Milestone 1. -->
+Evidence: `results/run_2026-09-23_1859_before.md`, written by
+`run_eval.py::main`. Three runs per question, cache off.
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. Chunks preserve complete thoughts | 4 of 5 |  |  |  |  |
-| 5. Cited source matches the correct document | 4 of 5 |  |  |  |  |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Chunks preserve complete thoughts | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 5. Cited source matches the correct document | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 
-<!-- Underneath, paste the REAL output for each criterion from one of your
-     runs — the actual text your system produced, not a description of it.
-     Name the file and function that produced it. -->
+### Criterion 1
+
+Top chunk for "When do unused dining dollars from the spring semester expire?"
+(`expects`: "May"), retrieved by `store.py::search`, produced by
+`chunker.py::split_documents`:
+
+```
+--- admin_dining_dollars.txt  distance 0.2838
+On the dining dollars
+
+Declining balance — what everyone calls dining dollars — rolls over from the autumn semester to the spring, but not from spring to the following autumn. Whatever is left in May disappears.
+```
+
+The `expects` phrase is in a retrieved chunk for all five questions. 5 of 5.
+
+### Criteria 2 and 5
+
+All five answers, run 1, from `results/run_2026-09-23_1859_before.md`, written
+by `generate.py::answer_from_chunks`:
+
+```
+For juniors and seniors, priority in the housing lottery is determined by accumulated credit hours first, with ties broken randomly (admin_housing_lottery.txt).
+
+Unused dining dollars from the spring semester disappear in May (they do not roll over to the following autumn). This information comes from `admin_dining_dollars.txt`.
+
+Student parking permits for the west lots sell out in about three days (admin_parking_permits.txt).
+
+The only advantage to declaring a major early is that it assigns you a departmental adviser, who is generally more useful than the general one (admin_declaring_a_major.txt).
+
+A hold on a checked-out book usually arrives in two to three days. (Source: admin_library_holds.txt)
+```
+
+Every answer names a file, so criterion 2 is 5 of 5. Each file named is the one
+that holds the fact, so criterion 5 is 5 of 5.
+
+### Criterion 3
+
+Produced by `run_eval.py::check_out_of_scope`, cutoff 0.6:
+
+```
+Out-of-scope questions (the gate should refuse these):
+  refused  (best distance 0.825)  What is the capital of Mongolia?
+  refused  (best distance 0.934)  How do I change the oil in a diesel engine?
+  refused  (best distance 0.886)  Who won the 1994 World Cup?
+  refused  (best distance 0.803)  What is the recommended dosage of ibuprofen for a headache?
+  refused  (best distance 0.877)  How do I write a for loop in Rust?
+  -> gate refused 5 of 5
+```
+
+### Criterion 4
+
+Five chunks sampled across the 105 produced by `chunker.py::split_documents`,
+showing how each ends:
+
+```
+admin_add_drop_deadline.txt   ...students find out from each other.
+course_cs_340_exams.txt       ...everyone learns this the hard way.
+dining_kestrel_commons.txt    ...one meal swipe, or $12.50 cash.
+housing_innisfree_hall.txt    ...one bathroom between two rooms.
+winter_gear.txt               ...considerably later on weekends.
+```
+
+None is cut mid-sentence. 5 of 5.
+
 
 ## Verdicts
 
