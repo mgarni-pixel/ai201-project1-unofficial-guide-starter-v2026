@@ -255,11 +255,14 @@ None is cut mid-sentence. 5 of 5.
 
 | # | Criterion | Verdict | How I decided |
 |---|---|---|---|
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
+| 1 | Retrieved chunks contain the answer | MET | Target 4 of 5. Each question's `expects` phrase appears literally in one of the five chunks `store.py::search` returned, in all three runs. 5 of 5. |
+| 2 | Every answer names a source | MET | Target 5 of 5. All fifteen answers contain a `.txt` filename. 5 of 5 in each run. |
+| 3 | Gate stops out-of-corpus questions | MET | Target 4 of 5. The gate refused all five, the closest at 0.803 against the 0.6 cutoff. 5 of 5. |
+| 4 | Chunks preserve complete thoughts | MET | Target 4 of 5. All five sampled chunks start and end on sentence boundaries. 5 of 5. |
+| 5 | Cited source matches the correct document | MET | Target 4 of 5. The file each answer cited is the file that contains the `expects` phrase, in all three runs. 5 of 5. |
+
+No criterion revised. All five were measurable, which is the only ground the
+unit accepts for a revision.
 
 ## Diagnoses
 
