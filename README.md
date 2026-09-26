@@ -284,6 +284,46 @@ unit accepts for a revision.
 
      Milestone 3. -->
 
+No criterion was missed, so there is no failure to trace to a stage.
+
+**The targets were set low.** Criterion 4 could not have failed: `CHUNK_SIZE`
+is 800 and the longest document in `campus_life` is 563 characters, so
+`chunker.py::split_documents` never splits anything. Criterion 2 tests an
+instruction the prompt already gives the model, since
+`generate.py::answer_from_chunks` is handed the filenames. Criteria 1, 3 and 5
+all asked for 4 of 5 and all returned 5 of 5 with no near misses.
+
+**Criterion 3 is the one I would tighten.** I filed it against five questions
+from another world entirely: Mongolia, diesel engines, the 1994 World Cup,
+ibuprofen, Rust. Refusing those is not evidence the gate works. I re-ran it
+against five questions a student here might ask that the corpus does not cover.
+The words tuition, gym, parking ticket, fraternity and heater appear in 0 of
+the 88 documents.
+
+Retrieved by `store.py::search`, gate decision by `gate.py::check`, cutoff 0.6:
+
+```
+  refused  0.657  admin_parking_permits.txt     How do I appeal a parking ticket?
+  LET IN   0.496  health_center.txt             What are the gym's opening hours?
+  refused  0.722  orientation_what_matters.txt  How do I join a fraternity?
+  refused  0.760  housing_innisfree_hall.txt    Where do I report a broken heater in my dorm?
+  LET IN   0.484  admin_add_drop_deadline.txt   What is the tuition payment deadline?
+  gate refused 3 of 5
+```
+
+Same 4 of 5 target, harder questions, 3 of 5.
+
+**The stage is embedding.** `gate.py` compares a distance against 0.6 and does
+that correctly. The distance is wrong. "What is the tuition payment deadline?"
+lands at 0.484 next to `admin_add_drop_deadline.txt` because the corpus is full
+of registrar deadlines and the question sounds like them. The distance measures
+whether a question sounds like the corpus, not whether the corpus contains the
+answer.
+
+**Tightened criterion 3, for the next unit:** the gate refuses at least 4 of 5
+questions that fit the corpus's subject but are not covered by it.
+
+
 ## The Improvement
 
 **What I changed:**
