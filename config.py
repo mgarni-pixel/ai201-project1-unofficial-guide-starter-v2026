@@ -35,6 +35,15 @@ CHUNK_OVERLAP = 120     # characters shared between neighbouring chunks
 
 TOP_K = 5               # how many chunks to pull back per question
 
+# Hybrid search (the unit 2 improvement). Meaning-only distance tells the gate
+# whether a question sounds like the corpus, not whether the corpus answers it,
+# so questions about topics the documents never mention get through. BM25
+# scores those low, because the words are absent. These two settings were
+# swept, not guessed; see "The Improvement" in README.md.
+HYBRID_ENABLED = True
+HYBRID_ALPHA = 0.3        # share of the final distance that comes from keywords
+BM25_FULL_MARK = 20.0     # BM25 score treated as a perfect keyword match
+
 # The relevance gate. If the best chunk is further away than this, the system
 # refuses to answer instead of handing the model thin material.
 #

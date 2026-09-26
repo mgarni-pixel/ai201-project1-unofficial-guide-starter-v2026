@@ -326,34 +326,117 @@ questions that fit the corpus's subject but are not covered by it.
 
 ## The Improvement
 
-**What I changed:**
+**What I changed:** I added BM25 keyword search alongside the meaning-based
+search in `store.py::search`. Each chunk now gets a keyword score as well as a
+cosine distance, and the two are blended into the single distance
+`gate.py::check` already compares against `THRESHOLD`. The keyword index is
+built from the chunks Chroma already holds. Two settings in `config.py` control
+it, `HYBRID_ALPHA` and `BM25_FULL_MARK`. That is the only change; chunking,
+corpus, model, threshold and prompt are untouched.
 
-**Why I picked it:**
+**Why I picked it:** My diagnosis found the gate admitting "What is the tuition
+payment deadline?" at 0.484 because the question sounds like a corpus full of
+registrar deadlines. The words those questions turn on appear in 0 of the 88
+documents, which a keyword score can see and a meaning score cannot.
 
-<!-- Connect it to a specific diagnosis above in one sentence. If you can't,
-     you picked a fix because it sounded impressive. -->
+**Choosing the settings.** I scored 20 questions in four groups of five: my
+filed questions, the same reworded, the campus-shaped questions from my
+diagnosis, and the filed `OUT_OF_SCOPE` set. The first ten should be answered
+and the last ten refused, so each setting scores out of 20. No API calls, since
+the gate decides before the model.
+
+```
+correct out of 20   columns = BM25_FULL_MARK
+           15    20    25    30    40
+ 0.00      17    17    17    17    17
+ 0.10      17    17    17    17    17
+ 0.20      17    17    17    17    17
+ 0.25      17    17    17    18    17
+ 0.30      17    18    18    17    16
+ 0.35      18    18    17    15    16
+ 0.40      18    17    16    16    16
+ 0.50      17    16    17    16    15
+ 0.60      15    17    16    15    15
+```
+
+Meaning-only scores 17. The best is 18, and 0.5, the value that looks like a
+sensible default, scores 16 — worse than making no change. I took alpha 0.3
+with a mark of 20 because it sits beside two other 18s rather than alone.
 
 ### Run Log — After
 
-<!-- Same format, same five criteria, three runs each.
-     `python run_eval.py --label after` -->
+Evidence: `results/run_2026-09-25_1930_after.md`, written by
+`run_eval.py::main`. Three runs per question, cache off.
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. Chunks preserve complete thoughts | 4 of 5 |  |  |  |  |
-| 5. Cited source matches the correct document | 4 of 5 |  |  |  |  |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Chunks preserve complete thoughts | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 5. Cited source matches the correct document | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
 
-**Did it help?**
+All five answers, run 1, written by `generate.py::answer_from_chunks`:
 
-<!-- Say plainly whether it did, and how you know. If it made things worse,
-     say that — a change that backfired, honestly reported, earns full credit
-     and is more interesting than one that worked. What matters is that you can
-     tell.
+```
+For juniors and seniors in the housing lottery, priority is determined by accumulated credit hours first, with a random tie-breaker used if needed (admin_housing_lottery.txt).
 
-     Milestone 4. -->
+Unused dining dollars from the spring semester disappear in May (they do not roll over to the following autumn).
+Source: `admin_dining_dollars.txt`
+
+Student parking permits for the west lots sell out in about three days (admin_parking_permits.txt).
+
+The only advantage to declaring early is that it assigns you a departmental adviser, who is generally more useful than the general one (admin_declaring_a_major.txt).
+
+A hold on a checked-out book usually arrives in two to three days (admin_library_holds.txt).
+```
+
+### Before and after
+
+My five filed questions, best distance:
+
+| Question | Before | After |
+|---|---|---|
+| Housing lottery priority | 0.220 | 0.184 |
+| Dining dollars expiry | 0.284 | 0.199 |
+| Parking permits | 0.199 | 0.139 |
+| Declaring a major | 0.337 | 0.236 |
+| Library holds | 0.147 | 0.103 |
+
+The campus-shaped questions from my diagnosis, which is what the change was for:
+
+| Question | Before | After |
+|---|---|---|
+| How do I appeal a parking ticket? | 0.657 refused | 0.659 refused |
+| What are the gym's opening hours? | 0.496 let in | 0.608 refused |
+| How do I join a fraternity? | 0.722 refused | 0.797 refused |
+| Where do I report a broken heater in my dorm? | 0.760 refused | 0.740 refused |
+| What is the tuition payment deadline? | 0.484 let in | 0.551 let in |
+| | 3 of 5 refused | 4 of 5 refused |
+
+The same five questions reworded, which the corpus does answer:
+
+| Question | Before | After |
+|---|---|---|
+| Do upperclassmen get better housing picks? | 0.524 pass | 0.582 pass |
+| If I don't spend my meal money, do I lose it? | 0.498 pass | 0.558 pass |
+| Should I rush to get a permit for the west lots? | 0.412 pass | 0.488 pass |
+| Is there any point declaring a major sooner? | 0.630 refused | 0.654 refused |
+| How long until a held book is mine? | 0.461 pass | 0.559 pass |
+| | 4 of 5 answered | 4 of 5 answered |
+
+**Did it help?** Yes, by one question in twenty. The gate refuses 4 of 5
+campus-shaped questions instead of 3 of 5. "What are the gym's opening hours?"
+moved from 0.496 to 0.608 and is now refused, for the reason predicted: gym
+appears in none of the 88 documents, so its keyword score is low and the blend
+pushed it past the cutoff. Nothing regressed. Reworded questions still answer
+4 of 5 and every filed question moved closer.
+
+Two things it did not fix. The tuition question still gets through at 0.551,
+because payment and deadline do appear in the corpus even though tuition does
+not. And my five criteria read 5 of 5 before and after, and also read 5 of 5 at
+alpha 0.5, which measured worse than making no change. The criteria could not
+tell the three systems apart.
 
 ## What's Still Broken
 

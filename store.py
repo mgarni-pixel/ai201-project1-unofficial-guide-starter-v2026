@@ -18,6 +18,7 @@ rest of the project if they were wrong:
 """
 
 import os
+import re
 import shutil
 from dataclasses import dataclass
 
@@ -178,6 +179,27 @@ def build_index(
     return len(chunks)
 
 
+_bm25_cache: dict[str, tuple] = {}
+
+
+def _tokenize(text: str) -> list[str]:
+    return re.findall(r"[a-z0-9']+", text.lower())
+
+
+def _bm25_for(collection):
+    """Keyword index over the chunks Chroma already holds, built once."""
+    name = collection.name
+    if name not in _bm25_cache:
+        from rank_bm25 import BM25Okapi
+
+        stored = collection.get()
+        _bm25_cache[name] = (
+            BM25Okapi([_tokenize(d) for d in stored["documents"]]),
+            {doc_id: i for i, doc_id in enumerate(stored["ids"])},
+        )
+    return _bm25_cache[name]
+
+
 def search(
     question: str,
     top_k: int | None = None,
@@ -199,25 +221,40 @@ def search(
             f"No index called '{name}'. Run `python app.py index` first."
         ) from exc
 
+    # Rank a wider pool on the blended score before cutting to top_k, so a
+    # chunk the keywords favour can overtake one they do not.
+    pool = top_k * 4 if config.HYBRID_ENABLED else top_k
+
     raw = collection.query(
         query_embeddings=embed([question]),
-        n_results=min(top_k, collection.count()),
+        n_results=min(pool, collection.count()),
     )
 
+    keyword_scores = positions = None
+    if config.HYBRID_ENABLED:
+        bm25, positions = _bm25_for(collection)
+        keyword_scores = bm25.get_scores(_tokenize(question))
+
     results: list[Result] = []
-    for text, meta, distance in zip(
-        raw["documents"][0], raw["metadatas"][0], raw["distances"][0]
+    for doc_id, text, meta, distance in zip(
+        raw["ids"][0], raw["documents"][0], raw["metadatas"][0], raw["distances"][0]
     ):
+        distance = float(distance)
+        if keyword_scores is not None:
+            keyword = min(1.0, float(keyword_scores[positions[doc_id]]) / config.BM25_FULL_MARK)
+            distance = (1 - config.HYBRID_ALPHA) * distance + config.HYBRID_ALPHA * (1 - keyword)
         results.append(
             Result(
                 text=text,
                 source=str(meta.get("source", "unknown")),
                 label=f"{meta.get('source', 'unknown')}#{meta.get('index', 0)}",
-                distance=float(distance),
+                distance=distance,
                 produced_by=str(meta.get("produced_by", "unknown")),
             )
         )
-    return results
+
+    results.sort(key=lambda r: r.distance)
+    return results[:top_k]
 
 
 def index_exists(corpus: str | None = None, variant: str = "default") -> bool:
