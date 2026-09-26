@@ -142,6 +142,22 @@ group.
 
 **2.** Another moment was github commits. Claude handled it automatically alongside helping me understand what was needed for the milestone before moving on. I got commits that were successful based on milestone progress. I just made sure to change that it double checked with me to ensure I am understanding the progress alongside having me double check the work it does.
 
+### Unit 2
+
+**3.** I asked Claude to draft What's Still Broken and What I'd Do Differently
+from the run tables already in this README. It wrote both, then I asked it to
+check its own text against the course instructions and the data. It found one
+number it had got wrong: it said the reworded questions sat between 0.41 and
+0.63, but the after column reaches 0.654. I had it correct that, and then had
+it show me every line it had written so I could read the judgments as mine or
+change them.
+
+**4.** While checking my Milestone 3 diagnosis, Claude noticed a sentence I had
+written that was wrong. I had said criterion 4 could not fail because
+`CHUNK_SIZE` is 800 and no document reaches it, but my chunker in unit 1 was
+already paragraph-based, so the size limit was not the reason. The real reason
+is that `chunker.py::split_documents` only splits on blank lines.
+
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
      claims earns nothing.
@@ -286,9 +302,9 @@ unit accepts for a revision.
 
 No criterion was missed, so there is no failure to trace to a stage.
 
-**The targets were set low.** Criterion 4 could not have failed: `CHUNK_SIZE`
-is 800 and the longest document in `campus_life` is 563 characters, so
-`chunker.py::split_documents` never splits anything. Criterion 2 tests an
+**The targets were set low.** Criterion 4 could not have failed:
+`chunker.py::split_documents` splits only on blank lines and never cuts inside
+a paragraph, so no chunk can end mid-sentence. Criterion 2 tests an
 instruction the prompt already gives the model, since
 `generate.py::answer_from_chunks` is handed the filenames. Criteria 1, 3 and 5
 all asked for 4 of 5 and all returned 5 of 5 with no near misses.
@@ -448,9 +464,76 @@ tell the three systems apart.
 
      Milestone 5. -->
 
+None of the five filed criteria is missed after the fix; they read 5 of 5 in
+every run before and after. What is still broken is the thing the criteria
+could not see.
+
+**The tightened criterion 3 sits exactly on its target.** The gate refuses 4 of
+5 campus-shaped questions, and the target is 4 of 5, so it is MET with no
+margin. "What is the tuition payment deadline?" still passes at 0.551 because
+the blend rewards `payment` and `deadline`, both common in the registrar files,
+and only penalises `tuition`. A keyword score cannot separate "sounds like a
+deadline question" from "is a deadline the corpus knows about".
+
+**What I'd do about it:** move the refusal into generation. The prompt already
+tells the model to say it does not know; I would make it name which chunk
+answers the question, and refuse when it names none. The distance gate would
+stay as a cheap first filter, and the model would catch the questions that
+sound right but are not covered. I stopped because that costs an API call on
+every question, including the ones the gate should have refused for free, and
+because it needs its own criterion and run log to prove it works rather than
+just moves the failures around.
+
+**There is a false refusal I cannot threshold away.** "Is there any point
+declaring a major sooner?" is answered by the corpus and is refused at 0.654.
+"How do I appeal a parking ticket?" is not covered and is refused at 0.659.
+They are 0.005 apart. No value of `THRESHOLD` lets the first in without also
+letting the second in, so the distance alone cannot fix this either. That is
+the same problem as the tuition question from the other side.
+
+**The keyword blend is saturated.** The 20-question grid tops out at 18 for
+every setting I tried, so the next point of improvement is not a better
+`HYBRID_ALPHA`. I stopped tuning when the grid showed that.
+
 ## What I'd Do Differently
 
 <!-- Knowing what you know now — which of your five criteria would you write
      differently, and why?
 
      Milestone 5. -->
+
+Three of the five could not fail, and the two that could were never close.
+All five would be written differently, but for different reasons.
+
+**Criterion 3 was tested against the wrong questions.** Mongolia and diesel
+engines were never going to land near a campus corpus. The version I wrote in
+my diagnosis, at least 4 of 5 questions that fit the corpus's subject but are
+not covered by it, is the one I should have filed in unit 1. It came out 3 of 5
+before the fix and 4 of 5 after, which is the only measurement in this project
+that moved.
+
+**Criterion 4 was unfalsifiable.** `chunker.py::split_documents` splits on
+blank lines and never cuts inside a paragraph, so a chunk cannot end
+mid-sentence. The criterion should have tested what the chunker does decide:
+whether each chunk holds one topic. The starter chunk for
+`housing_innisfree_hall.txt` held room layout, AC, laundry prices and noise;
+a criterion like "4 of 5 sampled chunks cover a single topic a question could
+target" would have failed on the starter and passed on mine.
+
+**Criterion 2 tested the prompt, not the system.** `generate.py::answer_from_chunks`
+hands the model the filenames and asks it to cite them. A better version
+would combine criteria 2 and 5 into one: the cited file must be the file that
+contains the `expects` phrase. That is the check that would fail if retrieval
+ranked a neighbouring file first.
+
+**Criteria 1 and 5 asked for counts when I needed margins.** Both read 5 of 5
+before and after, and also 5 of 5 at `HYBRID_ALPHA` 0.5, which the grid showed
+was worse than no change. A count of five cannot tell three systems apart. I
+would file "best distance for every filed question is at least 0.2 below
+`THRESHOLD`", and pair it with the reworded questions, "4 of 5 rewordings pass
+the gate", since those sat between 0.41 and 0.65 and were the questions that
+actually exercised the cutoff.
+
+**The pattern:** I wrote targets I expected to hit. The useful criterion is
+the one written where the pipeline is expected to be weakest, so a miss says
+something about the pipeline rather than about the test.
